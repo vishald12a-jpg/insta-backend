@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mini Instagram</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+        }
+
+        header {
+            background: white;
+            padding: 18px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        .container {
+            width: 500px;
+            max-width: 95%;
+            margin: 25px auto;
+        }
+
+        .box {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #ddd;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        textarea {
+            resize: none;
+            height: 80px;
+        }
+
+        button {
+            padding: 9px 14px;
+            margin: 5px 3px 5px 0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .primary {
+            background: #222;
+            color: white;
+        }
+
+        .like {
+            background: #ffdddd;
+        }
+
+        .delete {
+            background: #ff5555;
+            color: white;
+        }
+
+        .post {
+            background: white;
+            padding: 18px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #ddd;
+        }
+
+        .post-user {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .post-content {
+            font-size: 17px;
+            margin: 15px 0;
+        }
+
+        .comments {
+            margin-top: 15px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+
+        .comment {
+            padding: 6px;
+            background: #f5f5f5;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Mini Instagram</h1>
+</header>
+
+<div class="container">
+
+    <!-- USER CREATION -->
+
+    <div class="box">
+
+        <h2>Create User</h2>
+
+        <input
+            type="text"
+            id="userName"
+            placeholder="Enter your name">
+
+        <button
+            class="primary"
+            onclick="createUser()">
+            Create User
+        </button>
+
+        <p id="userMessage"></p>
+
+    </div>
+
+
+    <!-- CREATE POST -->
+
+    <div class="box">
+
+        <h2>Create Post</h2>
+
+        <input
+            type="number"
+            id="postUserId"
+            placeholder="User ID">
+
+        <textarea
+            id="postContent"
+            placeholder="Write something..."></textarea>
+
+        <button
+            class="primary"
+            onclick="createPost()">
+            Post
+        </button>
+
+        <p id="postMessage"></p>
+
+    </div>
+
+
+    <!-- POSTS -->
+
+    <h2>Posts</h2>
+
+    <div id="postsContainer">
+
+        Loading posts...
+
+    </div>
+
+</div>
+
+
+<script>
+
+    const API = "";
+
+
+    // ==========================================
+    // CREATE USER
+    // ==========================================
+
+    async function createUser() {
+
+        const name =
+            document.getElementById("userName").value;
+
+        if (name.trim() === "") {
+
+            alert("Enter user name");
+
+            return;
+        }
+
+        const response = await fetch(
+            API + "/users",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    name: name
+                })
+            }
+        );
+
+        if (response.ok) {
+
+            const user = await response.json();
+
+            document.getElementById("userMessage")
+                .innerText =
+                "User created! ID: " + user.id;
+
+            document.getElementById("userName")
+                .value = "";
+
+        } else {
+
+            alert("Failed to create user");
+
+        }
+    }
+
+
+    // ==========================================
+    // CREATE POST
+    // ==========================================
+
+    async function createPost() {
+
+        const userId =
+            document.getElementById("postUserId").value;
+
+        const content =
+            document.getElementById("postContent").value;
+
+        if (!userId || content.trim() === "") {
+
+            alert("Enter User ID and post content");
+
+            return;
+        }
+
+        const response = await fetch(
+            API + "/posts",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    content: content,
+
+                    user: {
+                        id: Number(userId)
+                    }
+
+                })
+            }
+        );
+
+        if (response.ok) {
+
+            document.getElementById("postMessage")
+                .innerText =
+                "Post created successfully";
+
+            document.getElementById("postContent")
+                .value = "";
+
+            loadPosts();
+
+        } else {
+
+            alert("Failed to create post");
+
+        }
+    }
+
+
+    // ==========================================
+    // LOAD POSTS
+    // ==========================================
+
+    async function loadPosts() {
+
+        const response =
+            await fetch(API + "/posts");
+
+        if (!response.ok) {
+
+            document.getElementById("postsContainer")
+                .innerHTML =
+                "Failed to load posts";
+
+            return;
+        }
+
+        const posts =
+            await response.json();
+
+        const container =
+            document.getElementById("postsContainer");
+
+        container.innerHTML = "";
+
+        if (posts.length === 0) {
+
+            container.innerHTML =
+                "<p>No posts available.</p>";
+
+            return;
+        }
+
+        posts.forEach(post => {
+
+            const postElement =
+                document.createElement("div");
+
+            postElement.className = "post";
+
+            postElement.innerHTML = `
+
+                <div class="post-user">
+
+                    👤 ${post.user.name}
+
+                </div>
+
+                <div class="post-content">
+
+                    ${post.content}
+
+                </div>
+
+                <button
+                    class="like"
+                    onclick="likePost(${post.id})">
+
+                    ❤️ Like
+
+                </button>
+
+                <button
+                    onclick="showComments(${post.id})">
+
+                    💬 Comments
+
+                </button>
+
+                <button
+                    class="delete"
+                    onclick="deletePost(${post.id})">
+
+                    Delete
+
+                </button>
+
+                <div id="comments-${post.id}"
+                     class="comments hidden">
+
+                    <input
+                        type="number"
+                        id="commentUser-${post.id}"
+                        placeholder="User ID">
+
+                    <input
+                        type="text"
+                        id="commentText-${post.id}"
+                        placeholder="Write a comment">
+
+                    <button
+                        onclick="addComment(${post.id})">
+
+                        Add Comment
+
+                    </button>
+
+                    <div id="commentList-${post.id}">
+
+                    </div>
+
+                </div>
+            `;
+
+            container.appendChild(postElement);
+
+        });
+
+    }
+
+
+    // ==========================================
+    // LIKE POST
+    // ==========================================
+
+    async function likePost(postId) {
+
+        const userId =
+            prompt("Enter your User ID");
+
+        if (!userId) {
+
+            return;
+        }
+
+        const response =
+            await fetch(
+                API +
+                "/likes/" +
+                userId +
+                "/" +
+                postId,
+                {
+                    method: "POST"
+                }
+            );
+
+        const message =
+            await response.text();
+
+        alert(message);
+    }
+
+
+    // ==========================================
+    // DELETE POST
+    // ==========================================
+
+    async function deletePost(postId) {
+
+        const confirmDelete =
+            confirm("Delete this post?");
+
+        if (!confirmDelete) {
+
+            return;
+        }
+
+        const response =
+            await fetch(
+                API + "/posts/" + postId,
+                {
+                    method: "DELETE"
+                }
+            );
+
+        if (response.ok) {
+
+            loadPosts();
+
+        } else {
+
+            alert("Failed to delete post");
+
+        }
+    }
+
+
+    // ==========================================
+    // SHOW COMMENTS
+    // ==========================================
+
+    async function showComments(postId) {
+
+        const section =
+            document.getElementById(
+                "comments-" + postId
+            );
+
+        section.classList.toggle("hidden");
+
+        if (!section.classList.contains("hidden")) {
+
+            loadComments(postId);
+
+        }
+    }
+
+
+    // ==========================================
+    // LOAD COMMENTS
+    // ==========================================
+
+    async function loadComments(postId) {
+
+        const response =
+            await fetch(
+                API +
+                "/comments/post/" +
+                postId
+            );
+
+        if (!response.ok) {
+
+            return;
+        }
+
+        const comments =
+            await response.json();
+
+        const list =
+            document.getElementById(
+                "commentList-" + postId
+            );
+
+        list.innerHTML = "";
+
+        comments.forEach(comment => {
+
+            const div =
+                document.createElement("div");
+
+            div.className = "comment";
+
+            div.innerHTML = `
+
+                <b>${comment.user.name}</b>:
+
+                ${comment.text}
+
+                <button
+                    class="delete"
+                    onclick="deleteComment(${comment.id}, ${postId})">
+
+                    Delete
+
+                </button>
+
+            `;
+
+            list.appendChild(div);
+
+        });
+
+    }
+
+
+    // ==========================================
+    // ADD COMMENT
+    // ==========================================
+
+    async function addComment(postId) {
+
+        const userId =
+            document.getElementById(
+                "commentUser-" + postId
+            ).value;
+
+        const text =
+            document.getElementById(
+                "commentText-" + postId
+            ).value;
+
+        if (!userId || text.trim() === "") {
+
+            alert("Enter User ID and comment");
+
+            return;
+        }
+
+        const response =
+            await fetch(
+                API + "/comments",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        text: text,
+
+                        user: {
+                            id: Number(userId)
+                        },
+
+                        post: {
+                            id: postId
+                        }
+
+                    })
+                }
+            );
+
+        if (response.ok) {
+
+            document.getElementById(
+                "commentText-" + postId
+            ).value = "";
+
+            loadComments(postId);
+
+        } else {
+
+            alert("Failed to add comment");
+
+        }
+
+    }
+
+
+    // ==========================================
+    // DELETE COMMENT
+    // ==========================================
+
+    async function deleteComment(
+        commentId,
+        postId
+    ) {
+
+        const response =
+            await fetch(
+                API +
+                "/comments/" +
+                commentId,
+                {
+                    method: "DELETE"
+                }
+            );
+
+        if (response.ok) {
+
+            loadComments(postId);
+
+        } else {
+
+            alert("Failed to delete comment");
+
+        }
+
+    }
+
+
+    // ==========================================
+    // LOAD POSTS WHEN PAGE OPENS
+    // ==========================================
+
+    loadPosts();
+
+</script>
+
+</body>
+
+</html>
